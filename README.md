@@ -1,12 +1,12 @@
 # py-mcws
-A library for connecting Minecraft and Python.
+A (fork of a) library for connecting Minecraft and Python.
 
 ---
 
 ## Installation
 
 ```sh
-pip install py-mcws
+pip install git+https://github.com/Astrea49/py-mcws.git
 ```
 
 ## Example
@@ -53,6 +53,7 @@ Join a world (singleplayer or on a BDS, including Realms) as an Operator and typ
 ## Events
 
 [List of Events](https://gist.github.com/jocopa3/5f718f4198f1ea91a37e3a9da468675c#file-mcpe-w10-event-names)
+
 Notes:
 * Function names use the `snake_case` version of the event names, unlike the `CamelCase` used
 everywhere else (including on the list). This is to be more consistent with the typical Python naming style.
