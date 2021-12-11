@@ -1,98 +1,108 @@
 import asyncio
-import sys
 import json
+import sys
 import uuid
 
-import websockets
-from websockets import serve
-
-from .scoreboard import ScoreBoard
+import websockets.exceptions
+import websockets.server
 
 
 class WsClient:
     def start(self, host="0.0.0.0", port=19132):
-        self.ws = websockets.serve(self.receive, host, port)
+        self._ws_base = websockets.server.serve(self.receive, host, port)
+        self.loop.run_until_complete(self._ws_base)
+        self.ws = self._ws_base.ws_server
         self.host = host
         self.port = port
-        self.ScoreBoard = ScoreBoard
+        self.events = []
         self.loop = asyncio.get_event_loop()
-        self.loop.run_until_complete(self.ws)
-        self.event_ready()
+        self.on_ready()
         self.loop.run_forever()
+
+    def on_ready(self):
+        # overwrite in subclassed file
+        print(f"{self.host}:{self.port} ready!")
+
+    def camel_to_snake(self, s):
+        return "".join(["_" + c.lower() if c.isupper() else c for c in s]).lstrip("_")
 
     async def receive(self, websocket, path):
         self.ws = websocket
         await self.listen_event()
-        await self.event("connect")  # self.event_connect()
+        await self.event("connect")  # self.on_connect()
         try:
             while True:
                 data = await self.ws.recv()
                 msg = json.loads(data)
                 await self.parse_command(msg)
         except (
-                websockets.exceptions.ConnectionClosedOK,
-                websockets.exceptions.ConnectionClosedError,
-                websockets.exceptions.ConnectionClosed):
-            await self.event("disconnect")  # self.event_disconnect()
+            websockets.exceptions.ConnectionClosedOK,
+            websockets.exceptions.ConnectionClosedError,
+            websockets.exceptions.ConnectionClosed,
+        ):
+            await self.event("disconnect")  # self.on_disconnect()
             sys.exit()
 
     async def listen_event(self):
         for event in self.events:
-            await self.ws.send(json.dumps({
-                "body": {
-                    "eventName": event
-                },
-                "header": {
-                    "requestId": "00000000-0000-0000-0000-000000000000",
-                    "messagePurpose": "subscribe",
-                    "version": 1,
-                    "messageType": "commandRequest"
-                }
-            }))
+            await self.ws.send(
+                json.dumps(
+                    {
+                        "body": {"eventName": event},
+                        "header": {
+                            "requestId": "00000000-0000-0000-0000-000000000000",
+                            "messagePurpose": "subscribe",
+                            "version": 1,
+                            "messageType": "commandRequest",
+                        },
+                    }
+                )
+            )
 
     async def parse_command(self, message):
         if message["header"]["messagePurpose"] == "event":
-            event_name = message["body"]["eventName"]
+            event_name = self.camel_to_snake(message["body"]["eventName"])
             await self.event(event_name, message)
-            if message["body"]["eventName"] == "PlayerMessage" and message["body"]["properties"]['MessageType'] == 'chat':
-                pass
         elif message["header"]["messagePurpose"] == "error":
             await self.event("error", message)
 
     async def command(self, cmd):
         uuid4 = str(uuid.uuid4())
-        cmd_json = json.dumps({
-            "body": {
-                "origin": {
-                    "type": "player"
+        cmd_json = json.dumps(
+            {
+                "body": {
+                    "origin": {"type": "player"},
+                    "commandLine": cmd,
+                    "version": 1,
                 },
-                "commandLine": cmd,
-                "version": 1
-            },
-            "header": {
-                "requestId": uuid4,
-                "messagePurpose": "commandRequest",
-                "version": 1,
-                "messageType": "commandRequest"
+                "header": {
+                    "requestId": uuid4,
+                    "messagePurpose": "commandRequest",
+                    "version": 1,
+                    "messageType": "commandRequest",
+                },
             }
-        })
+        )
         await self.ws.send(cmd_json)
         data = await self.ws.recv()
         msg = json.loads(data)
-        if msg["header"]["messagePurpose"] == "commandResponse" and msg["header"]["requestId"] == uuid4:
+        if (
+            msg["header"]["messagePurpose"] == "commandResponse"
+            and msg["header"]["requestId"] == uuid4
+        ):
             return msg
         else:
             return None
 
     async def event(self, name, *args):
-        func = f"self.event_{name}"
+        func = f"self.on_{name}"
         if args == ():
             try:
                 await eval(f"{func}()")
             except NameError as e:
-                print(f"event_{name}")
+                print(f"on_{name}")
         else:
             try:
                 await eval(f"{func}({args})")
             except NameError as e:
-                print(f"event_{name}")
+                print(f"on_{name}")

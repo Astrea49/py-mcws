@@ -1,2 +1,1 @@
-websockets
-discord.py
+websockets==10.1
