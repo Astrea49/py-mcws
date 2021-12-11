@@ -1,1 +1,2 @@
-from .server import WsClient
+from .events import Events
+from .server import MCWSClient

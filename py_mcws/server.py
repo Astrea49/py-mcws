@@ -2,12 +2,13 @@ import asyncio
 import json
 import sys
 import uuid
+from enum import Enum
 
 import websockets.exceptions
 import websockets.server
 
 
-class WsClient:
+class MCWSClient:
     def start(self, host="0.0.0.0", port=19132):
         self._ws_base = websockets.server.serve(self.receive, host, port)
         self.loop.run_until_complete(self._ws_base)
@@ -28,7 +29,7 @@ class WsClient:
 
     async def receive(self, websocket, path):
         self.ws = websocket
-        await self.listen_event()
+        await self.listen_to_events()
         await self.event("connect")  # self.on_connect()
         try:
             while True:
@@ -43,8 +44,11 @@ class WsClient:
             await self.event("disconnect")  # self.on_disconnect()
             sys.exit()
 
-    async def listen_event(self):
+    async def listen_to_events(self):
         for event in self.events:
+            if isinstance(event, Enum):
+                event = event.value
+
             await self.ws.send(
                 json.dumps(
                     {
