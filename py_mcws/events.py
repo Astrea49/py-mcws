@@ -89,3 +89,4 @@ class Events(Enum):
     WORLD_GENERATED = "WorldGenerated"
     WORLD_LOADED = "WorldLoaded"
     WORLD_UNLOADED = "WorldUnloaded"
+    SLASH_COMMAND_EXECUTED = "SlashCommandExecuted"
