@@ -111,7 +111,7 @@ class MCWSClient:
         """
         print("Disconnected from world!")
 
-    async def on_error(self, message):
+    async def on_error(self, message: dict):
         """
         Runs whenever the client receives an error from Minecraft.
 
@@ -119,6 +119,39 @@ class MCWSClient:
         to have a different implementation.
         """
         print(f"Error occured: {message}")
+
+    async def command(self, cmd: str):
+        """
+        Sends a Minecraft command to the world.
+        The command syntax is the same as Minecraft's syntax, although a
+        beginning `/` cannot be present.
+        """
+        uuid4 = str(uuid.uuid4())
+        cmd_json = json.dumps(
+            {
+                "body": {
+                    "origin": {"type": "player"},
+                    "commandLine": cmd,
+                    "version": 1,
+                },
+                "header": {
+                    "requestId": uuid4,
+                    "messagePurpose": "commandRequest",
+                    "version": 1,
+                    "messageType": "commandRequest",
+                },
+            }
+        )
+        await self._ws.send(cmd_json)
+        data = await self._ws.recv()
+        msg = json.loads(data)
+        if (
+            msg["header"]["messagePurpose"] == "commandResponse"
+            and msg["header"]["requestId"] == uuid4
+        ):
+            return msg
+        else:
+            return None
 
     def _determine_events(self):
         functions = inspect.getmembers(self, predicate=inspect.ismethod)
@@ -164,34 +197,6 @@ class MCWSClient:
             await self._dispatch(event_name, message)
         elif message["header"]["messagePurpose"] == "error":
             await self.on_error(message)
-
-    async def command(self, cmd):
-        uuid4 = str(uuid.uuid4())
-        cmd_json = json.dumps(
-            {
-                "body": {
-                    "origin": {"type": "player"},
-                    "commandLine": cmd,
-                    "version": 1,
-                },
-                "header": {
-                    "requestId": uuid4,
-                    "messagePurpose": "commandRequest",
-                    "version": 1,
-                    "messageType": "commandRequest",
-                },
-            }
-        )
-        await self._ws.send(cmd_json)
-        data = await self._ws.recv()
-        msg = json.loads(data)
-        if (
-            msg["header"]["messagePurpose"] == "commandResponse"
-            and msg["header"]["requestId"] == uuid4
-        ):
-            return msg
-        else:
-            return None
 
     async def _dispatch(self, name: str, message: dict):
         func = self._events.get(name)
