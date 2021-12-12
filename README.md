@@ -32,7 +32,7 @@ class MyMCWSClient(py_mcws.MCWSClient):
         print(event)
 
     @py_mcws.listener(py_mcws.Events.PLAYER_DIED)
-    async def on_player_died(self, event):
+    async def on_player_death(self, event):
         print(event)
 
 client = MyMCWSClient(host="localhost", port=8000)
