@@ -15,7 +15,6 @@ pip install git+https://github.com/Astrea49/py-mcws.git
 import py_mcws
 
 class MyMCWSClient(py_mcws.MCWSClient):
-
     def on_ready(self):
         print(f"{self.host}:{self.port} ready!")
 
