@@ -51,7 +51,7 @@ Join a world (singleplayer or on a BDS, including Realms) as an Operator and typ
 ### Note
 
 By default, Windows 10 and 11 prevents UWP applications from accessing a loopback connection with "localhost"
-(i.e. network resources running on the same machine). If you are running a Websocket client on your machine
+(i.e. network resources running on the same machine). If you are running a WebSocket client on your machine
 and also testing said client on the same machine in a local world, the protection will kick in and you will
 be unable to connect to the client.
 
@@ -69,8 +69,8 @@ more information.
 [List of Events](https://gist.github.com/jocopa3/5f718f4198f1ea91a37e3a9da468675c#file-mcpe-w10-event-names)
 
 Notes:
-* The listener decorator must be used to decorate all functions corresponding with an event in-game. However,
-the function decorated can be named whatever you desire.
+* The `@py_mcws.listener(event)` decorator must be used to decorate all functions corresponding with an event
+in-game. However, the function decorated can be named whatever you desire.
 * The library provides an enum of all of the current events for you. However, if you so desire, or if the event
 is not in the enum, you may use the raw, camel-case string.
 
